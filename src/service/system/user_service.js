@@ -3,8 +3,16 @@
 const connect = require("../../app/database");
 
 class UserService {
-  create(user) {
-    // connect.excute()
+  async create(user) {
+    const { name, password } = user;
+    const statement = "INSERT INTO `user` (name, password) VALUES (?, ?)";
+    const [res] = await connect.execute(statement, [name, password]);
+    return res;
+  }
+  async findUserByName(name) {
+    const statement = "SELECT * FROM user WHERE name = ?";
+    const [res] = await connect.execute(statement, [name]);
+    return !!res.length;
   }
 }
 

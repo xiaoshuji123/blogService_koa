@@ -1,8 +1,13 @@
-const userService = require("../../service/user");
+const { create } = require("../../service/system/user_service");
+
 class UserController {
-  create(ctx, next) {
-    console.log(1);
-    console.log(ctx);
+  async create(ctx, next) {
+    const users = ctx.request.body;
+    const res = await create(users);
+    ctx.body = {
+      code: 0,
+      data: "用户注册成功",
+    };
   }
 }
 
