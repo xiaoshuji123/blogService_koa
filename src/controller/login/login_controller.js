@@ -10,8 +10,12 @@ class LoginController {
     });
     ctx.body = {
       code: 0,
-      data: "登录成功",
-      token,
+      data: {
+        id,
+        name,
+        token,
+      },
+      message: "登录成功",
     };
   }
 }

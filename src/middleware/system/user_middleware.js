@@ -1,4 +1,5 @@
 const { findUserByName, create } = require("../../service/system/user_service");
+const sha256Password = require("../../utils/sha_password");
 
 async function vertifyUser(ctx, next) {
   const { name, password } = ctx.request.body;
@@ -18,6 +19,13 @@ async function vertifyUser(ctx, next) {
   await next();
 }
 
+/* sha256加密密码 */
+async function handelPassword(ctx, next) {
+  const { password } = ctx.request.body;
+  ctx.request.body.password = sha256Password(password);
+  await next();
+}
 module.exports = {
   vertifyUser,
+  handelPassword,
 };

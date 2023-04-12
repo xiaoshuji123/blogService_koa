@@ -1,7 +1,5 @@
-const {
-  findUserByName,
-  checkPassword,
-} = require("../../service/login/login_service");
+const { findUserByName } = require("../../service/login/login_service");
+const sha256Password = require("../../utils/sha_password");
 
 async function vertifyLogin(ctx, next) {
   const { name, password } = ctx.request.body;
@@ -17,7 +15,7 @@ async function vertifyLogin(ctx, next) {
     return;
   }
   // 3.密码是否正确
-  if (user.password !== password) {
+  if (user.password !== sha256Password(password)) {
     ctx.app.emit("error", -1003, ctx);
     return;
   }
