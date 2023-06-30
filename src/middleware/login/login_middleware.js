@@ -15,6 +15,7 @@ async function vertifyLogin(ctx, next) {
     return;
   }
   // 3.密码是否正确
+  console.log(0)
   if (user.password !== sha256Password(password)) {
     ctx.app.emit("error", -1003, ctx);
     return;
