@@ -2,10 +2,12 @@
 const Koa = require("koa");
 const bodyParser = require("koa-bodyparser");
 const cors = require("koa2-cors");
+const static = require("koa-static");
 
 // 1.创建服务器
 const app = new Koa();
 app.use(cors());
+app.use(static('../../uploads'));
 
 // 使用第三方中间件解析body数据
 app.use(bodyParser());

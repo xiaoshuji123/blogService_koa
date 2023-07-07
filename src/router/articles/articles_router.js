@@ -14,4 +14,7 @@ articlesRouter.post('/editArticle', articlesController.edit);
 
 // 删除文章
 articlesRouter.post('/deleteArticle', articlesController.delete)
+
+articlesRouter.get('/img', articlesController.getImg)
+
 module.exports = articlesRouter

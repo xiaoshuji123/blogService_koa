@@ -1,9 +1,13 @@
+const dayjs = require("dayjs");
 const commentsService = require("../../service/comments/comments_service");
 
 class CommentsController {
 	async list(ctx, next) {
 		const { offset = 0, limit = 20 } = ctx.request.body;
 		const res = await commentsService.list(offset, limit);
+		res.forEach((item) => {
+			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
+		});
 		if (res) {
 			ctx.body = {
 				code: 0,

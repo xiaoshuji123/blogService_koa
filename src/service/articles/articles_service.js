@@ -44,6 +44,12 @@ class ArticlesService {
 		const [res] = await connect.execute(statement, [id]);
 		return res;
 	}
+	async getImg(id) {
+		const statement = `SELECT * FROM image WHERE id = ?`;
+		const [res] = await connect.execute(statement, [id]);
+		return res;
+	}
+
 }
 
 module.exports = new ArticlesService();
