@@ -1,6 +1,5 @@
 const dayjs = require("dayjs");
-const fs = require("fs")
-const { SERVER_HOST, SERVER_PORT } = require("../../config/server");
+const fs = require("fs");
 
 const articlesService = require("../../service/articles/articles_service");
 const { UPLOAD_PATH } = require("../../config/path");
@@ -20,8 +19,8 @@ class ArticlesController {
 		}
 	}
 	async create(ctx, next) {
-		const { title, content, authorId } = ctx.request.body;
-		const res = await articlesService.createArticle(title, content, authorId);
+		const { title, content, coverUrl, authorId } = ctx.request.body;
+		const res = await articlesService.createArticle(title, content, coverUrl, authorId);
 		if (res) {
 			ctx.body = {
 				code: 0,
@@ -49,19 +48,18 @@ class ArticlesController {
 			};
 		}
 	}
+	// 这个接口是用来获取图片的，往后的图片就调用这个接口来展示
 	async getImg(ctx, next) {
-		const { id } = ctx.query;
-		const res = await articlesService.getImg(id);
-		ctx.type = res[0].mimetype;
-		const url = `uploads/${res[0].filename}`;
-		const newUrl = `${SERVER_HOST}:${SERVER_PORT}/${url}`;
-
-		console.log(newUrl)
-		ctx.body = {
-			code: 0,
-			url: newUrl,
-			data: "获取图片成功",
-		};
+		try {
+			const { filename } = ctx.query;
+			const res = await articlesService.getImg(filename);
+			ctx.type = res.mimetype;
+			const url = `${UPLOAD_PATH}/${res.filename}`;
+			const newUrl = fs.createReadStream(url);
+			ctx.body = newUrl;
+		} catch (error) {
+			ctx.body = error;
+		}
 	}
 }
 

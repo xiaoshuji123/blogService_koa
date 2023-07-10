@@ -7,7 +7,7 @@ class ArticlesService {
 		try {
 			const statement = `
 			SELECT
-				a.id id , a.title title, a.content content, a.createTime createTime, a.authorId authorId, u.name authorName,
+				a.id id , a.title title, a.content content, a.createTime createTime, a.authorId authorId, u.name authorName, a.coverUrl coverUrl,
 				CASE
 					WHEN COUNT(c.id) > 0 THEN JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'articleId', c.article_id, 'content', c.content, 'createTime', c.create_time, 'parentId', c.parent_id, 'userName', u.name ))
 					ELSE JSON_ARRAY() END as comments
@@ -22,10 +22,10 @@ class ArticlesService {
 			console.log(error);
 		}
 	}
-	async createArticle(title, content, authorId) {
+	async createArticle(title, content, coverUrl, authorId) {
 		const statement =
-			"INSERT INTO articles (title, content, authorId) VALUES (?, ?, ?);";
-		const [res] = await connect.execute(statement, [title, content, authorId]);
+			"INSERT INTO articles (title, content, coverUrl, authorId) VALUES (?, ?, ?, ?);";
+		const [res] = await connect.execute(statement, [title, content, coverUrl, authorId]);
 		return res;
 	}
 	async editArticle(title, content, authorId, id) {
@@ -44,12 +44,15 @@ class ArticlesService {
 		const [res] = await connect.execute(statement, [id]);
 		return res;
 	}
-	async getImg(id) {
-		const statement = `SELECT * FROM image WHERE id = ?`;
-		const [res] = await connect.execute(statement, [id]);
-		return res;
+	async getImg(filename) {
+		try {
+			const statement = `SELECT * FROM image WHERE filename = ?`;
+			const [res] = await connect.execute(statement, [filename]);
+			return res.pop();
+		} catch (error) {
+			throw error
+		}
 	}
-
 }
 
 module.exports = new ArticlesService();
