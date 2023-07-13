@@ -7,7 +7,7 @@ class UploadController {
 		console.log(ctx.request.file);
 		const { filename, mimetype, size } = ctx.request.file;
 		const res = await uploadService.upload(filename, mimetype, size);
-		const url = `${SERVER_HOST}:${SERVER_PORT}/article/img?filename=${filename}`;
+		const url = `${SERVER_HOST}:${SERVER_PORT}/article/img/${filename}`;
 		if (res) {
 			ctx.body = {
 				code: 0,
