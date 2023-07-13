@@ -3,10 +3,11 @@ const fs = require("fs");
 
 const articlesService = require("../../service/articles/articles_service");
 const { UPLOAD_PATH } = require("../../config/path");
+const deleteImage = require("../../utils/deleteImg");
 
 class ArticlesController {
 	async list(ctx, next) {
-		const { offset = '0', limit = '20', title = null } = ctx.query;
+		const { offset = "0", limit = "20", title = null } = ctx.query;
 		const res = await articlesService.list(offset, limit, title);
 		res.forEach((item) => {
 			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
@@ -21,7 +22,12 @@ class ArticlesController {
 	}
 	async create(ctx, next) {
 		const { title, content, coverUrl, authorId } = ctx.request.body;
-		const res = await articlesService.createArticle(title, content, coverUrl, authorId);
+		const res = await articlesService.createArticle(
+			title,
+			content,
+			coverUrl,
+			authorId
+		);
 		if (res) {
 			ctx.body = {
 				code: 0,
@@ -31,7 +37,13 @@ class ArticlesController {
 	}
 	async edit(ctx, next) {
 		const { id, title, content, authorId, coverUrl } = ctx.request.body;
-		const res = await articlesService.editArticle(title, content, authorId, coverUrl, id);
+		const res = await articlesService.editArticle(
+			title,
+			content,
+			authorId,
+			coverUrl,
+			id
+		);
 		if (res) {
 			ctx.body = {
 				code: 0,
@@ -41,6 +53,9 @@ class ArticlesController {
 	}
 	async delete(ctx, next) {
 		const { id } = ctx.request.body;
+		const { coverUrl } = await articlesService.articleDetail(id);
+
+		deleteImage(coverUrl.split("/").pop());
 		const res = await articlesService.deleteArticle(id);
 		if (res) {
 			ctx.body = {
