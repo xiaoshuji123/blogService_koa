@@ -1,9 +1,9 @@
 const connect = require("../../app/database");
 class TagService {
-	async list(offset, limit) {
+	async list(offset, limit, name) {
 		try {
-			const statement = "SELECT * FROM tags ORDER BY create_time DESC LIMIT ?, ?";
-			const [res] = await connect.execute(statement, [offset + '', limit + '']);
+			const statement = "SELECT * FROM tags t WHERE t.name LIKE ? ORDER BY create_time DESC LIMIT ?, ?";
+			const [res] = await connect.execute(statement, [`%${name}%`, offset + '', limit + '']);
 			return res;
 		} catch (error) {
 			throw error
@@ -22,6 +22,16 @@ class TagService {
 		try {
 			const statement = "UPDATE tags SET name = ? WHERE id = ?;";
 			const [res] = await connect.execute(statement, [name, id]);
+			return res;
+		} catch (error) {
+			throw error
+		}
+	}
+
+	async delete(id) {
+		try {
+			const statement = "DELETE FROM tags WHERE id = ?;";
+			const [res] = await connect.execute(statement, [id]);
 			return res;
 		} catch (error) {
 			throw error

@@ -2,8 +2,8 @@ const tagService = require("../../service/tags/tags_service");
 
 class TagController {
 	async list(ctx, next) {
-		const { offset = "0", limit = "20" } = ctx.request.body;
-		const res = await tagService.list(offset, limit);
+		const { offset = "0", limit = "20", name = '' } = ctx.request.body;
+		const res = await tagService.list(offset, limit, name);
 		if (res) {
 			ctx.body = {
 				code: 0,
@@ -31,6 +31,17 @@ class TagController {
 			ctx.body = {
 				code: 0,
 				data: "编辑成功",
+			};
+		}
+	}
+
+	async delete(ctx, next) {
+		const { tagId } = ctx.params;
+		const res = await tagService.delete(tagId);
+		if (res) {
+			ctx.body = {
+				code: 0,
+				data: "删除成功",
 			};
 		}
 	}
