@@ -1,7 +1,8 @@
 const connect = require("../../app/database");
 
 class CommentsService {
-	async list(offset, limit) {
+	async list(offset, limit, title) {
+		// 数据库会将null当作特殊字符，所以当为null,把它转为空字符
 		try {
 			const statement = `
 			SELECT
@@ -12,23 +13,31 @@ class CommentsService {
 			LEFT JOIN articles a ON a.id = c.article_id
 			LEFT JOIN comment c2 ON c.parent_id = c2.id
 			LEFT JOIN user u2 ON c2.user_id = u2.id
+			WHERE a.title LIKE ?
 			ORDER BY createTime DESC LIMIT ?, ?`;
-			const [res] = await connect.execute(statement, [offset + '', limit + '']);
+			const [res] = await connect.execute(statement, [`%${title}%`, offset + "", limit + ""]);
 			return res;
 		} catch (error) {
 			return error;
 		}
 	}
 	async create(data) {
-		const { articleId, content, userId, parentId } = data;
+		let { articleId, content, userId, parentId = null, replyId } = data;
+		if (!parentId ) {
+			parentId = null;
+		}
+		if (!replyId ) {
+			replyId = null;
+		}
 		try {
 			const statement =
-				"INSERT INTO `comment` (article_id, content, user_id, parent_id) VALUES (?, ?, ?, ?)";
+				"INSERT INTO `comment` (article_id, content, user_id, parent_id, reply_id) VALUES (?, ?, ?, ?, ?)";
 			const [res] = await connect.execute(statement, [
 				articleId,
 				content,
 				userId,
 				parentId,
+				replyId
 			]);
 			return res;
 		} catch (error) {

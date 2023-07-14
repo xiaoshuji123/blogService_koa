@@ -7,7 +7,7 @@ const deleteImage = require("../../utils/deleteImg");
 
 class ArticlesController {
 	async list(ctx, next) {
-		const { offset = "0", limit = "20", title = null } = ctx.query;
+		const { offset = "0", limit = "20", title = '' } = ctx.query;
 		const res = await articlesService.list(offset, limit, title);
 		res.forEach((item) => {
 			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
