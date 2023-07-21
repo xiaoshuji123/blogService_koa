@@ -11,6 +11,7 @@ class CommentsController {
 		if (res) {
 			ctx.body = {
 				code: 0,
+				message: "",
 				data: res,
 			};
 		}
@@ -22,7 +23,8 @@ class CommentsController {
 			if (res) {
 				ctx.body = {
 					code: 0,
-					data: "创建成功",
+					message: "创建成功",
+					data: null,
 				};
 			}
 		} catch (error) {
@@ -35,7 +37,8 @@ class CommentsController {
 		if (res) {
 			ctx.body = {
 				code: 0,
-				data: "删除成功",
+				message: "删除成功",
+				data: null,
 			};
 		}
 	}

@@ -25,6 +25,11 @@ app.on("error", (err, ctx) => {
     case -1006:
       message = "不是该动态的作者，没有权限操作";
       break;
+		case -1007:
+			message = "删除失败";
+		case -1008:
+			message = "参数错误";
+			break;
   }
   ctx.body = {
     code,

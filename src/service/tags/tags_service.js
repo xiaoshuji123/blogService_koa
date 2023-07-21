@@ -32,7 +32,7 @@ class TagService {
 		try {
 			const statement = "DELETE FROM tags WHERE id = ?;";
 			const [res] = await connect.execute(statement, [id]);
-			return res;
+			return res.affectedRows;
 		} catch (error) {
 			throw error
 		}

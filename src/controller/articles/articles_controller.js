@@ -16,6 +16,7 @@ class ArticlesController {
 		if (res) {
 			ctx.body = {
 				code: 0,
+				message: "",
 				data: res,
 			};
 		}
@@ -31,7 +32,8 @@ class ArticlesController {
 		if (res) {
 			ctx.body = {
 				code: 0,
-				data: "创建文章成功",
+				message: "创建文章成功",
+				data: null,
 			};
 		}
 	}
@@ -47,7 +49,8 @@ class ArticlesController {
 		if (res) {
 			ctx.body = {
 				code: 0,
-				data: "编辑文章成功",
+				message: "编辑文章成功",
+				data: null,
 			};
 		}
 	}
@@ -60,7 +63,8 @@ class ArticlesController {
 		if (res) {
 			ctx.body = {
 				code: 0,
-				data: "删除文章成功",
+				message: "删除文章成功",
+				data: null,
 			};
 		}
 	}
@@ -70,6 +74,7 @@ class ArticlesController {
 		if (res) {
 			ctx.body = {
 				code: 0,
+				message: "",
 				data: res,
 			};
 		}

@@ -12,7 +12,7 @@ tagsRouter.post("/createTag", tagsController.create)
 tagsRouter.post("/editTag/:tagId", tagsController.edit)
 
 // 4.删除标签
-tagsRouter.post("/deleteTag/:tagId", tagsController.delete)
+tagsRouter.post("/deleteTag", tagsController.delete)
 
 // 5.标签详情
 tagsRouter.get("/:tagId", tagsController.detail)
