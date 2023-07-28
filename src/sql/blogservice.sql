@@ -11,11 +11,31 @@
  Target Server Version : 80033
  File Encoding         : 65001
 
- Date: 14/07/2023 19:27:34
+ Date: 28/07/2023 19:24:22
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for article_tags
+-- ----------------------------
+DROP TABLE IF EXISTS `article_tags`;
+CREATE TABLE `article_tags`  (
+  `article_id` int NOT NULL,
+  `tag_id` int NOT NULL,
+  INDEX `article_id`(`article_id` ASC) USING BTREE,
+  INDEX `tag_id`(`tag_id` ASC) USING BTREE,
+  CONSTRAINT `article_tags_ibfk_1` FOREIGN KEY (`article_id`) REFERENCES `articles` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT `article_tags_ibfk_2` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of article_tags
+-- ----------------------------
+INSERT INTO `article_tags` VALUES (17, 22);
+INSERT INTO `article_tags` VALUES (17, 9);
+INSERT INTO `article_tags` VALUES (17, 22);
 
 -- ----------------------------
 -- Table structure for articles
@@ -35,7 +55,7 @@ CREATE TABLE `articles`  (
   INDEX `tag_id`(`tag_id` ASC) USING BTREE,
   CONSTRAINT `articles_ibfk_1` FOREIGN KEY (`authorId`) REFERENCES `user` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `articles_ibfk_2` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 18 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of articles
@@ -44,6 +64,7 @@ INSERT INTO `articles` VALUES (2, '古诗', '长风破浪会有时，直挂云�
 INSERT INTO `articles` VALUES (4, '流言', '蔡徐坤崩塌了', '2023-07-10 18:52:27', 2, '2023-07-10 18:52:27', '123123', NULL);
 INSERT INTO `articles` VALUES (5, '测试一下', '## 测试数据\n123213123\n## 图片\n![jkjgkEfvpUPVyRjUImniVslZfWPnJuuZ.png](http://localhost:7000/article/img/75ef72ec2f2123a99108b8429f36f354)非常好看123213123', '2023-07-10 18:52:33', 2, '2023-07-13 09:43:11', 'http://localhost:7000/article/img/0cce8f77157ef661f17495c219dfee30', NULL);
 INSERT INTO `articles` VALUES (16, '12321', '123213', '2023-07-14 10:21:05', 2, '2023-07-14 10:21:05', 'http://localhost:7000/article/img/accc303e215abcbf5370e683731770b8', NULL);
+INSERT INTO `articles` VALUES (17, '还未王', '123411', '2023-07-28 15:58:50', 2, '2023-07-28 18:38:10', 'http://localhost:7000/article/img/215194fad8b44f796d24425b92698b69', NULL);
 
 -- ----------------------------
 -- Table structure for comment
@@ -85,7 +106,7 @@ CREATE TABLE `image`  (
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `mimetype` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 29 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of image
@@ -109,6 +130,7 @@ INSERT INTO `image` VALUES (24, '7a9291c35687a7389561fad91dcf16ad', 50538, '2023
 INSERT INTO `image` VALUES (25, '09ba0100d315a88fd4ab731e63f348f5', 50538, '2023-07-13 14:34:01', 'image/webp');
 INSERT INTO `image` VALUES (26, '82ac7d47460668f9c96c0b427a131cb8', 50538, '2023-07-13 17:46:06', 'image/webp');
 INSERT INTO `image` VALUES (27, 'accc303e215abcbf5370e683731770b8', 50538, '2023-07-14 10:21:04', 'image/webp');
+INSERT INTO `image` VALUES (28, '215194fad8b44f796d24425b92698b69', 50538, '2023-07-28 15:57:16', 'image/webp');
 
 -- ----------------------------
 -- Table structure for menu
@@ -237,12 +259,14 @@ CREATE TABLE `tags`  (
   `create_time` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
   UNIQUE INDEX `name`(`name` ASC) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 23 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of tags
 -- ----------------------------
 INSERT INTO `tags` VALUES (1, 'javaScript', '2023-07-14 15:02:57');
+INSERT INTO `tags` VALUES (9, 'java1', '2023-07-17 19:22:56');
+INSERT INTO `tags` VALUES (22, 'dddd', '2023-07-27 18:22:32');
 
 -- ----------------------------
 -- Table structure for user
