@@ -1,5 +1,6 @@
 const dayjs = require("dayjs");
 const fs = require("fs");
+const connect = require("../../app/database");
 
 const articlesService = require("../../service/articles/articles_service");
 const { UPLOAD_PATH } = require("../../config/path");
@@ -7,7 +8,7 @@ const deleteImage = require("../../utils/deleteImg");
 
 class ArticlesController {
 	async list(ctx, next) {
-		const { offset = "0", limit = "20", title = '' } = ctx.query;
+		const { offset = "0", limit = "20", title = "" } = ctx.query;
 		const res = await articlesService.list(offset, limit, title);
 		res.forEach((item) => {
 			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
@@ -22,13 +23,22 @@ class ArticlesController {
 		}
 	}
 	async create(ctx, next) {
-		const { title, content, coverUrl, authorId } = ctx.request.body;
+		const { title, content, coverUrl, authorId, tagIds } = ctx.request.body;
+		// tagIds
+
 		const res = await articlesService.createArticle(
 			title,
 			content,
 			coverUrl,
 			authorId
 		);
+		const newId = res.insertId;
+		tagIds.forEach(async (id) => {
+			await articlesService.createTagById(newId, id);
+		});
+		// newId
+
+		console.log(res);
 		if (res) {
 			ctx.body = {
 				code: 0,
@@ -38,20 +48,37 @@ class ArticlesController {
 		}
 	}
 	async edit(ctx, next) {
-		const { id, title, content, authorId, coverUrl } = ctx.request.body;
-		const res = await articlesService.editArticle(
-			title,
-			content,
-			authorId,
-			coverUrl,
-			id
-		);
-		if (res) {
-			ctx.body = {
-				code: 0,
-				message: "编辑文章成功",
-				data: null,
-			};
+		const { id, title, content, authorId, coverUrl, tagIds } = ctx.request.body;
+		const connection = await connect.getConnection();
+		await connection.beginTransaction();
+		try {
+			const res = await articlesService.editArticle(
+				title,
+				content,
+				authorId,
+				coverUrl,
+				id
+			);
+			for (const tagId of tagIds) {
+				await articlesService.createTagById(id, tagId);
+			}
+			if (res) {
+				ctx.body = {
+					code: 0,
+					message: "编辑文章成功",
+					data: null,
+				};
+			}
+		} catch (error) {
+			await connection.rollback()
+			ctx.status = error.statusCode;
+			if(error.statusCode === 400) {
+				ctx.body = {
+					code: -1020,
+					message: error.message,
+					data: null,
+				};
+			}
 		}
 	}
 	async delete(ctx, next) {

@@ -61,6 +61,25 @@ class ArticlesService {
 		return res[0];
 	}
 
+	async createTagById(articleId, tagId) {
+		const data = await this.hasDuplicateTag(articleId, tagId);
+		if (data) {
+			const error = new Error('同一篇文章不能有相同的标签');
+			error.statusCode = 400;
+			throw error
+		}
+		const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
+		const [res] = await connect.execute(statement, [articleId, tagId])
+		return res;
+	}
+	// 检查同一篇文章下是否有重复标签
+	async hasDuplicateTag(articleId, tagId) {
+		const statement = `SELECT * FROM article_tags WHERE article_id = ? AND tag_id = ?`;
+		const [res] = await connect.execute(statement, [articleId, tagId])
+		return !!res;
+	}
+
+
 	async getImg(filename) {
 		try {
 			const statement = `SELECT * FROM image WHERE filename = ?`;
