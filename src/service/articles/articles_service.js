@@ -1,4 +1,4 @@
-const connect = require("../../app/database");
+const { connect } = require("../../app/database");
 
 class ArticlesService {
 	//平常get请求是?offset=0&limit=20这种常见的方式，它是字符串
@@ -18,18 +18,22 @@ class ArticlesService {
 			WHERE a.title LIKE ?
 			GROUP BY a.id
 			ORDER BY createTime DESC LIMIT ?, ?`;
-			const [res] = await connect.execute(statement, [`%${title}%`, offset, limit]);
+			const [res] = await connect.execute(statement, [
+				`%${title}%`,
+				offset,
+				limit,
+			]);
 			return res;
 		} catch (error) {
 			console.log(error);
 			// WHERE IFNULL(a.title, '') LIKE ?
-    	// 	AND (a.title IS NOT NULL OR a.title != '')
+			// 	AND (a.title IS NOT NULL OR a.title != '')
 		}
 	}
-	async createArticle(title, content, coverUrl, authorId) {
+	async createArticle(connection, title, content, coverUrl, authorId) {
 		const statement =
 			"INSERT INTO articles (title, content, coverUrl, authorId) VALUES (?, ?, ?, ?);";
-		const [res] = await connect.execute(statement, [
+		const [res] = await connection.execute(statement, [
 			title,
 			content,
 			coverUrl,
@@ -37,17 +41,21 @@ class ArticlesService {
 		]);
 		return res;
 	}
-	async editArticle(title, content, authorId, coverUrl, id) {
-		const statement =
-			"UPDATE articles SET title = ?, content = ?, authorId = ?, coverUrl = ? WHERE id = ?;";
-		const [res] = await connect.execute(statement, [
-			title,
-			content,
-			authorId,
-			coverUrl,
-			id,
-		]);
-		return res;
+	async editArticle(connection, title, content, authorId, coverUrl, id) {
+		try {
+			const statement =
+				"UPDATE articles SET title = ?, content = ?, authorId = ?, coverUrl = ? WHERE id = ?;";
+			const [res] = await connection.execute(statement, [
+				title,
+				content,
+				authorId,
+				coverUrl,
+				id,
+			]);
+			return res;
+		} catch (error) {
+			throw error;
+		}
 	}
 	async deleteArticle(id) {
 		const statement = `DELETE FROM articles WHERE id = ?`;
@@ -61,30 +69,101 @@ class ArticlesService {
 		return res[0];
 	}
 
-	async createTagById(articleId, tagId) {
-		const data = await this.hasDuplicateTag(articleId, tagId);
-		if (data) {
-			const error = new Error('同一篇文章不能有相同的标签');
-			error.statusCode = 400;
-			throw error
+	async createTagById(connection, articleId, tagId) {
+		try {
+			await this.tagHandel(connection, articleId, tagId);
+			const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
+			const [res] = await connection.execute(statement, [articleId, tagId]);
+			return res;
+		} catch (error) {
+			throw error;
 		}
-		const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
-		const [res] = await connect.execute(statement, [articleId, tagId])
-		return res;
+	}
+	async editTagById(connection, articleId, tagId) {
+		try {
+			// 1.检查文章是否存在，不存在返回错误信息
+			// 2.检查新的标签是否存在。如果新的标签不存在，应该返回错误信息。
+			// 3.检查新的标签是否和旧的标签相同。如果相同，不需要执行任何操作。
+			// 4.删除旧的标签。
+			// 5.添加新的标签。
+			const [article] = await connection.execute(`SELECT * FROM articles WHERE id = ?`, [articleId]);
+			console.log(article)
+			if (!article[0]) {
+				const error = new Error("文章不存在");
+				error.statusCode = 404;
+				throw error;
+			}
+			await this.tagHandel(connection, articleId, tagId);
+			const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
+			const [res] = await connection.execute(statement, [articleId, tagId]);
+			return res;
+		} catch (error) {
+			throw error;
+		}
 	}
 	// 检查同一篇文章下是否有重复标签
-	async hasDuplicateTag(articleId, tagId) {
+	async hasDuplicateTag(connection, articleId, tagId) {
 		const statement = `SELECT * FROM article_tags WHERE article_id = ? AND tag_id = ?`;
-		const [res] = await connect.execute(statement, [articleId, tagId])
-		return !!res;
+		const [res] = await connection.execute(statement, [articleId, tagId]);
+		return !!res[0];
 	}
 
+	async deleteTagByarticleId(articleId) {
+		const statement = `DELETE FROM article_tags WHERE article_id = ?`;
+		const [res] = await connect.execute(statement, [articleId]);
+		return res;
+
+		try {
+			// 检查文章是否存在
+			const [articleId] = await connect.execute(
+				"SELECT * FROM article_tags WHERE article_id = ?",
+				[articleId]
+			);
+			if (articleId.length === 0) {
+				const error = new Error("文章不存在");
+				error.statusCode = 404;
+				throw error;
+			}
+			// 删除标签
+			const [result] = await connect.execute(
+				"DELETE FROM articles WHERE id = ?",
+				[articleId]
+			);
+			return result.affectedRows;
+		} catch (error) {
+			throw error;
+		}
+	}
 
 	async getImg(filename) {
 		try {
 			const statement = `SELECT * FROM image WHERE filename = ?`;
 			const [res] = await connect.execute(statement, [filename]);
 			return res.pop();
+		} catch (error) {
+			throw error;
+		}
+	}
+	async tagHandel(connection, articleId, tagId) {
+		// 1.检查文章是否存在，不存在返回错误信息
+		// 2.检查新的标签是否存在。如果新的标签不存在，应该返回错误信息。
+		// 3.检查标签是否在一篇文章中重复。
+		try {
+			const [tag] = await connection.execute(
+				`SELECT * FROM tags WHERE id = ?`,
+				[tagId]
+			);
+			if (!tag[0]) {
+				const error = new Error("标签不存在");
+				error.statusCode = 404;
+				throw error;
+			}
+			const data = await this.hasDuplicateTag(connection, articleId, tagId);
+			if (data) {
+				const error = new Error("同一篇文章不能有相同的标签");
+				error.statusCode = 404;
+				throw error;
+			}
 		} catch (error) {
 			throw error;
 		}

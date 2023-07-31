@@ -1,4 +1,4 @@
-const connect = require("../../app/database");
+const { connect }= require("../../app/database");
 class TagService {
 	async list(offset, limit, name) {
 		try {

@@ -1,6 +1,6 @@
 const dayjs = require("dayjs");
 const fs = require("fs");
-const connect = require("../../app/database");
+const { connect, transaction } = require("../../app/database");
 
 const articlesService = require("../../service/articles/articles_service");
 const { UPLOAD_PATH } = require("../../config/path");
@@ -24,44 +24,55 @@ class ArticlesController {
 	}
 	async create(ctx, next) {
 		const { title, content, coverUrl, authorId, tagIds } = ctx.request.body;
-		// tagIds
-
-		const res = await articlesService.createArticle(
-			title,
-			content,
-			coverUrl,
-			authorId
-		);
-		const newId = res.insertId;
-		tagIds.forEach(async (id) => {
-			await articlesService.createTagById(newId, id);
-		});
-		// newId
-
-		console.log(res);
-		if (res) {
+		try {
+			const res = await transaction(async (connection) => {
+				const res = await articlesService.createArticle(
+					connection,
+					title,
+					content,
+					coverUrl,
+					authorId
+				);
+				const newId = res.insertId;
+				// 先创建文章，获取文章ID，再将标签与文章进行绑定
+				for (const tagId of tagIds) {
+					await articlesService.createTagById(connection, newId, tagId);
+				}
+				return res
+			})
+			if (res) {
+				ctx.body = {
+					code: 0,
+					message: "创建文章成功",
+					data: null,
+				};
+			}
+		} catch (error) {
+			ctx.status = error.statusCode;
 			ctx.body = {
-				code: 0,
-				message: "创建文章成功",
+				code: -1020,
+				message: error.message,
 				data: null,
 			};
 		}
 	}
 	async edit(ctx, next) {
 		const { id, title, content, authorId, coverUrl, tagIds } = ctx.request.body;
-		const connection = await connect.getConnection();
-		await connection.beginTransaction();
 		try {
-			const res = await articlesService.editArticle(
-				title,
-				content,
-				authorId,
-				coverUrl,
-				id
-			);
-			for (const tagId of tagIds) {
-				await articlesService.createTagById(id, tagId);
-			}
+			const res = await transaction(async (connection) => {
+				const res = await articlesService.editArticle(
+					connection,
+					title,
+					content,
+					authorId,
+					coverUrl,
+					id
+				);
+				for (const tagId of tagIds) {
+					await articlesService.editTagById(connection, id, tagId);
+				}
+				return res
+			})
 			if (res) {
 				ctx.body = {
 					code: 0,
@@ -70,11 +81,16 @@ class ArticlesController {
 				};
 			}
 		} catch (error) {
-			await connection.rollback()
-			ctx.status = error.statusCode;
-			if(error.statusCode === 400) {
+			if (error.statusCode === 400) {
+				ctx.status = error.statusCode;
 				ctx.body = {
 					code: -1020,
+					message: error.message,
+					data: null,
+				};
+			} else {
+				ctx.body = {
+					code: -1,
 					message: error.message,
 					data: null,
 				};

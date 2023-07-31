@@ -29,4 +29,35 @@ connectionPool.getConnection((err, connection) => {
 // 3.获取连接池中的连接对象（异步形式）
 const connect = connectionPool.promise();
 
-module.exports = connect;
+
+
+// 开启了事务
+// 事务是指一组SQL语句的集合，这些SQL语句必须全部执行成功或全部执行失败。在一个事务中，如果有任何一条SQL语句执行失败，
+// 则所有的SQL语句都会被撤销，回滚到事务开始前的状态。如果所有的SQL语句都执行成功，则所有的操作都会被提交，保存到数据库中
+// 针对多条sql语句，要不全部成功，要不全部失败
+async function transaction(callback) {
+  const connection = await connect.getConnection(); // 获取mysql连接，从连接池中拉取一个连接
+  try {
+    await connection.beginTransaction(); // 开启事务
+    const result = await callback(connection);
+    await connection.commit(); // 提交事务
+    return result;
+  } catch (error) {
+    await connection.rollback(); // 回滚事务
+    throw error;
+  } finally {
+		// 释放连接
+    connection.release();
+  }
+}
+
+async function query(connection, sql, params) {
+  const [result] = await connection.execute(sql, params);
+  return result;
+}
+
+module.exports = {
+	connect,
+  transaction,
+  query
+};

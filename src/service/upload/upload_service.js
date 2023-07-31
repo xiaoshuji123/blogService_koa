@@ -1,4 +1,4 @@
-const connect = require("../../app/database");
+const { connect }= require("../../app/database");
 
 class UploadService {
 	async upload(filename, mimetype, size, url) {

@@ -1,4 +1,4 @@
-const connect = require("../../app/database");
+const { connect } = require("../../app/database");
 
 class CommentsService {
 	async list(offset, limit, title) {
@@ -15,7 +15,11 @@ class CommentsService {
 			LEFT JOIN user u2 ON c2.user_id = u2.id
 			WHERE a.title LIKE ?
 			ORDER BY createTime DESC LIMIT ?, ?`;
-			const [res] = await connect.execute(statement, [`%${title}%`, offset + "", limit + ""]);
+			const [res] = await connect.execute(statement, [
+				`%${title}%`,
+				offset + "",
+				limit + "",
+			]);
 			return res;
 		} catch (error) {
 			return error;
@@ -23,10 +27,10 @@ class CommentsService {
 	}
 	async create(data) {
 		let { articleId, content, userId, parentId = null, replyId } = data;
-		if (!parentId ) {
+		if (!parentId) {
 			parentId = null;
 		}
-		if (!replyId ) {
+		if (!replyId) {
 			replyId = null;
 		}
 		try {
@@ -37,7 +41,7 @@ class CommentsService {
 				content,
 				userId,
 				parentId,
-				replyId
+				replyId,
 			]);
 			return res;
 		} catch (error) {
