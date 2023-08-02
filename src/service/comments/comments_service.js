@@ -4,6 +4,11 @@ class CommentsService {
 	async list(offset, limit, title) {
 		// 数据库会将null当作特殊字符，所以当为null,把它转为空字符
 		try {
+			const [countResult] = await connect.execute(
+				`SELECT COUNT(*) as total FROM comment`,
+				[`%${title}%`]
+			);
+			const total = countResult[0].total;
 			const statement = `
 			SELECT
 				C.id id , c.article_id articleId, c.content content, c.create_time createTime, c.parent_id parentId, u.name userName, a.title title,
@@ -15,12 +20,12 @@ class CommentsService {
 			LEFT JOIN user u2 ON c2.user_id = u2.id
 			WHERE a.title LIKE ?
 			ORDER BY createTime DESC LIMIT ?, ?`;
-			const [res] = await connect.execute(statement, [
+			const [list] = await connect.execute(statement, [
 				`%${title}%`,
 				offset + "",
 				limit + "",
 			]);
-			return res;
+			return { total, list };
 		} catch (error) {
 			return error;
 		}

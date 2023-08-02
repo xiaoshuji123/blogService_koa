@@ -6,15 +6,29 @@ class ArticlesService {
 	// const [res] = await connect.execute(statement, [offset + '', limit + '']);
 	async list(offset, limit, title) {
 		try {
+			const countStatement = `SELECT COUNT(*) as total FROM articles`;
+			const [countResult] = await connect.execute(countStatement, [
+				`%${title}%`,
+			]);
+			const total = countResult[0].total;
+
 			const statement = `
 			SELECT
 				a.id id , a.title title, a.content content, a.createTime createTime, a.updateTime updateTime, a.authorId authorId, u.name authorName, a.coverUrl coverUrl,
 				CASE
+					WHEN COUNT(at.tag_id) > 0
+					THEN JSON_ARRAYAGG(JSON_OBJECT('label', t.id, 'value', t.name))
+					ELSE JSON_ARRAY()
+					END as tags,
+				CASE
 					WHEN COUNT(c.id) > 0 THEN JSON_ARRAYAGG(JSON_OBJECT('id', c.id, 'articleId', c.article_id, 'content', c.content, 'createTime', c.create_time, 'parentId', c.parent_id, 'userName', u.name ))
-					ELSE JSON_ARRAY() END as comments
+					ELSE JSON_ARRAY()
+					END as comments
 			FROM articles a
 			LEFT JOIN user u ON u.id = a.authorId
 			LEFT JOIN comment c ON c.article_id = a.id
+			LEFT JOIN article_tags at ON at.article_id = a.id
+			LEFT JOIN tags t ON at.tag_id = t.id
 			WHERE a.title LIKE ?
 			GROUP BY a.id
 			ORDER BY createTime DESC LIMIT ?, ?`;
@@ -23,11 +37,15 @@ class ArticlesService {
 				offset,
 				limit,
 			]);
-			return res;
+			return {
+				total,
+				limit,
+				offset,
+				current_page: Number(offset) + 1,
+				list: res,
+			};
 		} catch (error) {
-			console.log(error);
-			// WHERE IFNULL(a.title, '') LIKE ?
-			// 	AND (a.title IS NOT NULL OR a.title != '')
+			throw error;
 		}
 	}
 	async createArticle(connection, title, content, coverUrl, authorId) {
@@ -60,18 +78,35 @@ class ArticlesService {
 	async deleteArticle(id) {
 		const statement = `DELETE FROM articles WHERE id = ?`;
 		const [res] = await connect.execute(statement, [id]);
+		console.log(res);
 		return res;
 	}
 
 	async articleDetail(articleId) {
-		const statement = `SELECT * FROM articles WHERE id = ?`;
-		const [res] = await connect.execute(statement, [articleId]);
-		return res[0];
+		try {
+			const statement = `
+			SELECT
+				a.id id , a.title title, a.content content, a.createTime createTime, a.updateTime updateTime, a.authorId authorId, u.name authorName, a.coverUrl coverUrl,
+				CASE
+					WHEN COUNT(at.tag_id) > 0 THEN JSON_ARRAYAGG(at.tag_id)
+					ELSE JSON_ARRAY()
+					END as tagIds
+			FROM articles a
+			LEFT JOIN user u ON u.id = a.authorId
+			LEFT JOIN article_tags at ON at.article_id = a.id
+			WHERE a.id = ?
+			GROUP BY a.id`;
+			const [res] = await connect.execute(statement, [articleId]);
+			return res[0];
+		} catch (error) {
+			console.log(error);
+			throw error
+		}
 	}
 
 	async createTagById(connection, articleId, tagId) {
 		try {
-			await this.tagHandel(connection, articleId, tagId);
+			await this.tagHandel(connection, tagId);
 			const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
 			const [res] = await connection.execute(statement, [articleId, tagId]);
 			return res;
@@ -79,57 +114,47 @@ class ArticlesService {
 			throw error;
 		}
 	}
-	async editTagById(connection, articleId, tagId) {
+	async editTagById(connection, articleId, newTagIds) {
 		try {
 			// 1.检查文章是否存在，不存在返回错误信息
 			// 2.检查新的标签是否存在。如果新的标签不存在，应该返回错误信息。
 			// 3.检查新的标签是否和旧的标签相同。如果相同，不需要执行任何操作。
 			// 4.删除旧的标签。
 			// 5.添加新的标签。
-			const [article] = await connection.execute(`SELECT * FROM articles WHERE id = ?`, [articleId]);
-			console.log(article)
+			const [article] = await connection.execute(
+				`SELECT * FROM articles WHERE id = ?`,
+				[articleId]
+			);
 			if (!article[0]) {
 				const error = new Error("文章不存在");
 				error.statusCode = 404;
 				throw error;
 			}
-			await this.tagHandel(connection, articleId, tagId);
-			const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
-			const [res] = await connection.execute(statement, [articleId, tagId]);
-			return res;
-		} catch (error) {
-			throw error;
-		}
-	}
-	// 检查同一篇文章下是否有重复标签
-	async hasDuplicateTag(connection, articleId, tagId) {
-		const statement = `SELECT * FROM article_tags WHERE article_id = ? AND tag_id = ?`;
-		const [res] = await connection.execute(statement, [articleId, tagId]);
-		return !!res[0];
-	}
-
-	async deleteTagByarticleId(articleId) {
-		const statement = `DELETE FROM article_tags WHERE article_id = ?`;
-		const [res] = await connect.execute(statement, [articleId]);
-		return res;
-
-		try {
-			// 检查文章是否存在
-			const [articleId] = await connect.execute(
-				"SELECT * FROM article_tags WHERE article_id = ?",
-				[articleId]
-			);
-			if (articleId.length === 0) {
-				const error = new Error("文章不存在");
-				error.statusCode = 404;
-				throw error;
+			for (const tagId of newTagIds) {
+				await this.tagHandel(connection, tagId);
 			}
-			// 删除标签
-			const [result] = await connect.execute(
-				"DELETE FROM articles WHERE id = ?",
+			const [olds] = await connection.execute(
+				`SELECT tag_id FROM article_tags WHERE article_id = ?`,
 				[articleId]
 			);
-			return result.affectedRows;
+			const oldTagIds = olds.map((item) => item.tag_id);
+
+			// 删除旧标签
+			for (const oldTag of oldTagIds) {
+				const index = newTagIds.findIndex((tagId) => tagId === oldTag);
+				if (index === -1) {
+					const statement = `DELETE FROM article_tags WHERE article_id = ? AND tag_id = ?`;
+					await connection.execute(statement, [articleId, oldTag]);
+				}
+			}
+			// 添加新标签
+			for (const tagId of newTagIds) {
+				const index = oldTagIds.findIndex((oldTag) => tagId === oldTag);
+				if (index === -1) {
+					const statement = `INSERT INTO article_tags (article_id, tag_id) VALUES (?, ?)`;
+					await connection.execute(statement, [articleId, tagId]);
+				}
+			}
 		} catch (error) {
 			throw error;
 		}
@@ -144,10 +169,8 @@ class ArticlesService {
 			throw error;
 		}
 	}
-	async tagHandel(connection, articleId, tagId) {
-		// 1.检查文章是否存在，不存在返回错误信息
-		// 2.检查新的标签是否存在。如果新的标签不存在，应该返回错误信息。
-		// 3.检查标签是否在一篇文章中重复。
+	async tagHandel(connection, tagId) {
+		// 1.检查新的标签是否存在。如果新的标签不存在，应该返回错误信息。
 		try {
 			const [tag] = await connection.execute(
 				`SELECT * FROM tags WHERE id = ?`,
@@ -155,12 +178,6 @@ class ArticlesService {
 			);
 			if (!tag[0]) {
 				const error = new Error("标签不存在");
-				error.statusCode = 404;
-				throw error;
-			}
-			const data = await this.hasDuplicateTag(connection, articleId, tagId);
-			if (data) {
-				const error = new Error("同一篇文章不能有相同的标签");
 				error.statusCode = 404;
 				throw error;
 			}

@@ -1,12 +1,22 @@
-const { connect }= require("../../app/database");
+const { connect } = require("../../app/database");
 class TagService {
 	async list(offset, limit, name) {
 		try {
-			const statement = "SELECT * FROM tags t WHERE t.name LIKE ? ORDER BY create_time DESC LIMIT ?, ?";
-			const [res] = await connect.execute(statement, [`%${name}%`, offset + '', limit + '']);
-			return res;
+			const [countResult] = await connect.execute(
+				`SELECT COUNT(*) as total FROM tags`,
+				[`%${name}%`]
+			);
+			const total = countResult[0].total;
+			const statement =
+				"SELECT * FROM tags t WHERE t.name LIKE ? ORDER BY create_time DESC LIMIT ?, ?";
+			const [list] = await connect.execute(statement, [
+				`%${name}%`,
+				offset + "",
+				limit + "",
+			]);
+			return { total, list };
 		} catch (error) {
-			throw error
+			throw error;
 		}
 	}
 	async create(name) {
@@ -15,7 +25,7 @@ class TagService {
 			const [res] = await connect.execute(statement, [name]);
 			return res;
 		} catch (error) {
-			throw error
+			throw error;
 		}
 	}
 	async edit(id, name) {
@@ -24,7 +34,7 @@ class TagService {
 			const [res] = await connect.execute(statement, [name, id]);
 			return res;
 		} catch (error) {
-			throw error
+			throw error;
 		}
 	}
 
@@ -34,7 +44,7 @@ class TagService {
 			const [res] = await connect.execute(statement, [id]);
 			return res.affectedRows;
 		} catch (error) {
-			throw error
+			throw error;
 		}
 	}
 
@@ -44,7 +54,7 @@ class TagService {
 			const [res] = await connect.execute(statement, [id]);
 			return res[0];
 		} catch (error) {
-			throw error
+			throw error;
 		}
 	}
 }

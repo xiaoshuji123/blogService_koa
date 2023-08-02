@@ -8,18 +8,22 @@ const deleteImage = require("../../utils/deleteImg");
 
 class ArticlesController {
 	async list(ctx, next) {
-		const { offset = "0", limit = "20", title = "" } = ctx.query;
-		const res = await articlesService.list(offset, limit, title);
-		res.forEach((item) => {
-			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
-			item.updateTime = dayjs(item.updateTime).format("YYYY-MM-DD HH:mm:ss");
-		});
-		if (res) {
-			ctx.body = {
-				code: 0,
-				message: "",
-				data: res,
-			};
+		try {
+			const { offset = "0", limit = "20", title = "" } = ctx.query;
+			const res = await articlesService.list(offset, limit, title);
+			res.list.forEach((item) => {
+				item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
+				item.updateTime = dayjs(item.updateTime).format("YYYY-MM-DD HH:mm:ss");
+			});
+			if (res) {
+				ctx.body = {
+					code: 0,
+					message: "",
+					data: res,
+				};
+			}
+		} catch (error) {
+			throw error;
 		}
 	}
 	async create(ctx, next) {
@@ -38,8 +42,8 @@ class ArticlesController {
 				for (const tagId of tagIds) {
 					await articlesService.createTagById(connection, newId, tagId);
 				}
-				return res
-			})
+				return res;
+			});
 			if (res) {
 				ctx.body = {
 					code: 0,
@@ -59,6 +63,14 @@ class ArticlesController {
 	async edit(ctx, next) {
 		const { id, title, content, authorId, coverUrl, tagIds } = ctx.request.body;
 		try {
+			const newTagIds = [...new Set(tagIds)];
+			if (newTagIds.length !== tagIds.length) {
+				return (ctx.body = {
+					code: 404,
+					message: "同一篇文章不能有相同的标签",
+					data: null,
+				});
+			}
 			const res = await transaction(async (connection) => {
 				const res = await articlesService.editArticle(
 					connection,
@@ -68,11 +80,9 @@ class ArticlesController {
 					coverUrl,
 					id
 				);
-				for (const tagId of tagIds) {
-					await articlesService.editTagById(connection, id, tagId);
-				}
-				return res
-			})
+				await articlesService.editTagById(connection, id, tagIds);
+				return res;
+			});
 			if (res) {
 				ctx.body = {
 					code: 0,
@@ -81,7 +91,7 @@ class ArticlesController {
 				};
 			}
 		} catch (error) {
-			if (error.statusCode === 400) {
+			if (error.statusCode === 404) {
 				ctx.status = error.statusCode;
 				ctx.body = {
 					code: -1020,
@@ -98,15 +108,24 @@ class ArticlesController {
 		}
 	}
 	async delete(ctx, next) {
-		const { id } = ctx.request.body;
-		const { coverUrl } = await articlesService.articleDetail(id);
-
-		deleteImage(coverUrl.split("/").pop());
-		const res = await articlesService.deleteArticle(id);
-		if (res) {
+		try {
+			const { id } = ctx.request.body;
+			const { coverUrl } = await articlesService.articleDetail(id);
+			if (coverUrl.indexOf('http') !== -1) {
+				await deleteImage(coverUrl.split("/").pop());
+			}
+			const res = await articlesService.deleteArticle(id);
+			if (res) {
+				ctx.body = {
+					code: 0,
+					message: "删除文章成功",
+					data: null,
+				};
+			}
+		} catch (error) {
 			ctx.body = {
-				code: 0,
-				message: "删除文章成功",
+				code: -1,
+				message: error.message,
 				data: null,
 			};
 		}

@@ -5,7 +5,7 @@ class TagController {
 	async list(ctx, next) {
 		const { offset = "0", limit = "20", name = "" } = ctx.request.body;
 		const res = await tagService.list(offset, limit, name);
-		res.forEach((item) => {
+		res.list.forEach((item) => {
 			item.create_time = dayjs(item.create_time).format("YYYY-MM-DD HH:mm:ss");
 			// item.updateTime = dayjs(item.updateTime).format("YYYY-MM-DD HH:mm:ss");
 		});

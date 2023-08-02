@@ -29,10 +29,17 @@ app.on("error", (err, ctx) => {
 			message = "删除失败";
 		case -1008:
 			message = "参数错误";
+		case -1009:
+		message = "同一篇文章不能有相同的标签";
+		case -1010:
+			message = "文章不存在";
+		case -1011:
+			message = "同一篇文章不能有相同的标签";
 			break;
   }
   ctx.body = {
     code,
     message,
+		data: null
   };
 });

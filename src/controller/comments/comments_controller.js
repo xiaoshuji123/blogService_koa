@@ -5,7 +5,7 @@ class CommentsController {
 	async list(ctx, next) {
 		const { offset = 0, limit = 20, title = '' } = ctx.request.body;
 		const res = await commentsService.list(offset, limit, title);
-		res.forEach((item) => {
+		res.list.forEach((item) => {
 			item.createTime = dayjs(item.createTime).format("YYYY-MM-DD HH:mm:ss");
 		});
 		if (res) {
