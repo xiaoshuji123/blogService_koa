@@ -78,7 +78,6 @@ class ArticlesService {
 	async deleteArticle(id) {
 		const statement = `DELETE FROM articles WHERE id = ?`;
 		const [res] = await connect.execute(statement, [id]);
-		console.log(res);
 		return res;
 	}
 
