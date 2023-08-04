@@ -26,6 +26,9 @@ userRouter.post('/editUser', vertifyRole, UserController.edit);
 // 删除用户
 userRouter.post('/deleteUser', UserController.delete)
 
+// 禁用|启用 用户
+userRouter.post('/updateStatus', UserController.updateStatus)
+
 // 用户详情
 userRouter.get('/:userId', UserController.detail)
 

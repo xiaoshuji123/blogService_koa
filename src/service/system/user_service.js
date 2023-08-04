@@ -69,10 +69,18 @@ class UserService {
 			throw error;
 		}
 	}
-	async deleteUser(id) {
-		const statement = `DELETE FROM user WHERE id = ?`;
-		const [res] = await connect.execute(statement, [id]);
-		return res;
+	async deleteUser(connection, userId) {
+		console.log(userId)
+		try {
+			const statement = `DELETE FROM user WHERE id = ?`;
+			// for (let id of userId) {
+			// 	const [res] = await connection.execute(statement, [id]);
+			// }
+			const res = await Promise.all(userId.map(id => connection.execute(statement, [id])));
+			return res
+		} catch (error) {
+			throw error;
+		}
 	}
 
 	async UserDetail(userId) {
@@ -137,6 +145,11 @@ class UserService {
 		} catch (error) {
 			throw error;
 		}
+	}
+	async updateStatus(status, id) {
+		const statement = "UPDATE user SET status = ? WHERE id = ?";
+		const [res] = await connect.execute(statement, [status, id]);
+		return res;
 	}
 
 	async findUserByName(name) {

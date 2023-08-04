@@ -96,8 +96,11 @@ class UserController {
 	}
 	async delete(ctx, next) {
 		try {
-			const { id } = ctx.request.body;
-			const res = await UserService.deleteUser(id);
+			const res = await transaction(async (connection) => {
+				const { userId = [] } = ctx.request.body;
+				const res = await UserService.deleteUser(connection, userId);
+				return res
+			})
 			if (res) {
 				ctx.body = {
 					code: 0,
@@ -121,6 +124,18 @@ class UserController {
 				code: 0,
 				message: "",
 				data: res,
+			};
+		}
+	}
+	async updateStatus(ctx, next) {
+		const { status, id } = ctx.request.body;
+		console.log(status, id)
+		const res = await UserService.updateStatus(status, id);
+		if (res) {
+			ctx.body = {
+				code: 0,
+				message: "更改状态成功",
+				data: 'res',
 			};
 		}
 	}
